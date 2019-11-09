@@ -1,0 +1,13 @@
+#Ignore All Store files
+.DS_Store
+
+#Ignore the secrets folder
+#Just incase if we have secrets
+#We might not
+#But you, the github reader, will never know
+#BAHAHAHA
+/secrets
+
+#Ignore the envrionment variables
+#Some more *potential* secrets ;)
+.env
