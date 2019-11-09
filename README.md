@@ -8,12 +8,12 @@ Project by Liao Hu, Kevin Lin, and Dhvanil Shah
 
 **IMPORTANT INFORMATION** Clone this project into a location/folder that is not updated to a cloud location. This will prevent the app from running properly on your local machine.
 
-This project uses the `yarn` package manager.
+This project uses the `yarn` package manager and `nodemon` to automatically restart the server with every update.
 
 ### Server
 
-Navigate to the server floder an run the following command to start the server.
+Navigate to the server floder an run the following command to start the server:
 
-`yarn start`
+`yarn & yarn start`
 
 The server will launch on port 8080 (given that port 8080 is free).
