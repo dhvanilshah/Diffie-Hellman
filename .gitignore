@@ -8,7 +8,7 @@
 #BAHAHAHA
 /secrets
 
-/node_modules
+node_modules/
 
 #Ignore the envrionment variables
 #Some more *potential* secrets ;)
