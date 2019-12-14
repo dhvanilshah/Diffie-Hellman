@@ -7,7 +7,7 @@ const privateKey = require("../diffie-helman/privateKey");
 const BigNumber = require("bignumber.js");
 
 router.get("/ask", async (req, res) => {
-  var bits = 9;
+  var bits = 10;
   let g, p;
 
   forge.prime.generateProbablePrime(bits, function(err, num) {
@@ -31,7 +31,6 @@ router.get("/ask", async (req, res) => {
 
   // SEND "_id" AS USER_ID COOKIE
   res.cookie("USER_ID", connection._id.toString());
-  console.log(res.cookie);
   cookie = connection._id.toString();
   const resp = { p, g, key: key.toString(), id: cookie };
   res.send(resp);
