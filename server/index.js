@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 var cookieParser = require("cookie-parser");
 
 const connectionRoute = require("./routes/connection.route");
+const connectionMsg = require("./routes/connection.msg");
 
 const app = express();
 const port = 8080;
@@ -29,7 +30,7 @@ const wsServer = new webSocketServer({
 
 // SOME STUFF TO PREVENET CORS ISSUES IN BROWSER
 // Allows users to access the server running locally on a machine via the machine's IP address
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
@@ -39,7 +40,7 @@ app.use(function(req, res, next) {
 });
 
 mongoose
-  .connect("mongodb://localhost:27017/diffie-helman-project", {
+  .connect("mongodb://127.0.0.1:27017/diffie-helman-project", {
     useNewUrlParser: true
   })
   .then(() => console.log("Connected to MongoDB..."))
@@ -61,6 +62,7 @@ app.post("/", (req, res) => {
 
 // Added a set of routes to test database calls
 app.use("/test", connectionRoute);
+app.use("/msg", connectionMsg);
 
 const getUniqueID = () => {
   const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -74,13 +76,13 @@ const sendMessage = (json) => {
   });
 };
 
-wsServer.on('request', function(request) {
+wsServer.on('request', function (request) {
   var userID = getUniqueID();
   console.log((new Date()) + ' Recieved a new connection from origin ' + request.origin + '.');
   const connection = request.accept(null, request.origin);
   clients[userID] = connection;
   console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(clients));
-  connection.on('message', function(message) {
+  connection.on('message', function (message) {
     if (message.type === 'utf8') {
       const dataFromClient = JSON.parse(message.utf8Data);
       const json = { type: dataFromClient.type };
