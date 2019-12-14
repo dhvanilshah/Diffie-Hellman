@@ -9,13 +9,14 @@ const mongoose = require("mongoose");
 var cookieParser = require("cookie-parser");
 
 const connectionRoute = require("./routes/connection.route");
+const connectionMsg = require("./routes/connection.msg");
 
 const app = express();
 const port = 8080;
 
 // SOME STUFF TO PREVENET CORS ISSUES IN BROWSER
 // Allows users to access the server running locally on a machine via the machine's IP address
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
@@ -25,7 +26,7 @@ app.use(function(req, res, next) {
 });
 
 mongoose
-  .connect("mongodb://localhost:27017/diffie-helman-project", {
+  .connect("mongodb://127.0.0.1:27017/diffie-helman-project", {
     useNewUrlParser: true
   })
   .then(() => console.log("Connected to MongoDB..."))
@@ -45,7 +46,10 @@ app.post("/", (req, res) => {
 });
 
 // Added a set of routes to test database calls
+
 app.use("/connect", connectionRoute);
+app.use("/msg", connectionMsg);
+
 
 // Not sure if this is redundant but I've used this in the past and it works.
 // app.use(cors());
