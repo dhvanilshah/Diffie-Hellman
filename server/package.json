@@ -11,6 +11,7 @@
     "start": "nodemon index.js"
   },
   "dependencies": {
+    "big-integer": "^1.6.48",
     "bignumber.js": "^9.0.0",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.4",
