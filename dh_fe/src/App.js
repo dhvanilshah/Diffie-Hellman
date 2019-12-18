@@ -9,6 +9,8 @@ var forge = require('node-forge');
 var bigInt = require("big-integer");
 const { TextArea } = Input;
 
+const dest = 'http://192.168.2.32:8080';
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -31,7 +33,7 @@ class App extends Component {
     console.log(encryptedHex);
     console.log(ivHex);
 
-    fetch('http://192.168.0.182:8080/msg/rx', {
+    fetch(dest + '/msg/rx', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,9 +54,22 @@ class App extends Component {
     });
   };
 
-  rsaencrypt = (m, n, e) => (
-      bigInt(m).modPow(e, n)
-  );
+  rsaencrypt = (m, n, e) => {
+    /*
+    console.log("m", m.toString())
+    console.log("n", n.toString())
+    console.log("e", e.toString())
+    n = BigNumber(n.toString());
+    m = BigNumber(m.toString());
+    e = BigNumber(e.toString());
+    var temp = m.exponentiatedBy(e);
+    console.log('B^e: ', temp.toString());
+    console.log('B^e mode n:', temp.mod(n).toString());
+    return temp.mod(n);
+     */
+    return m.modPow(e, n);
+  }
+
 
   componentWillMount() {
 
@@ -65,7 +80,7 @@ class App extends Component {
     } else {
       this.setVariable();
       this.createRSAPair();
-      fetch('http://localhost:8080/connect/ask', {
+      fetch(dest + '/connect/ask', {
         method: 'GET',
       })
         .then(response => response.json())
@@ -73,22 +88,28 @@ class App extends Component {
           console.log(data);
           localStorage.setItem('user_id', data['id']);
           document.cookie = "USER_ID=" + data['id'];
-          //console.log(parseInt(localStorage.getItem('key')));
           var B = BigNumber(data['g'])
             .exponentiatedBy(parseInt(localStorage.getItem('private')))
             .modulo(data['p']).toString();
+          console.log(B);
           var s = BigNumber(data['key'])
             .exponentiatedBy(parseInt(localStorage.getItem('private')))
             .modulo(data['p']).toString();
-          var e = bigInt.fromArray(data['e'], 100);
-          var n = bigInt.fromArray(data['n'], 100);
-          fetch('http://192.168.0.182:8080/connect/ask', {
+
+          var e = bigInt.fromArray(data['e'].value, 100);
+          var n = bigInt.fromArray(data['n'].value, 100);
+          console.log('e: ', e);
+          console.log('n: ', n);
+          console.log('b: ', bigInt(B));
+          console.log('encrypted b: ', this.rsaencrypt(bigInt(B), n, e).toArray(100));
+
+          fetch(dest + '/connect/ask', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              'B': this.rsaencrypt(bigInt(B), e, n).toArray(100),
+              'B': this.rsaencrypt(bigInt(B), n, e).toArray(100),
               'id': data['id']
             }),
           })
