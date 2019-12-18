@@ -11,15 +11,18 @@ const { TextArea } = Input;
 
 const dest = 'http://192.168.2.32:8080';
 
+
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       key: '',
+
       text: '',
       encryptedtx: '',
       ivtx: '',
       decryptmsg: ''
+
     };
   }
   encrypt = (message, key) => {
@@ -33,6 +36,7 @@ class App extends Component {
     // Convert encrypted msg and IV to Hex
     var encryptedHex = cipher.output.toHex();
     var ivHex = forge.util.bytesToHex(ivBytes);
+
     this.setState({
       encryptedtx: encryptedHex,
       ivtx: ivHex
@@ -41,6 +45,7 @@ class App extends Component {
     console.log(ivHex);
     console.log(message);
     fetch(dest + '/msg/rx', {
+
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -77,6 +82,7 @@ class App extends Component {
       this.setState({decryptmsg: msgBytes});
     }
   };
+
   handleSubmit = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
@@ -86,9 +92,11 @@ class App extends Component {
     });
   };
 
+
   rsaencrypt = (m, n, e) => {
     return m.modPow(e, n);
   }
+
 
 
   componentWillMount() {
@@ -100,7 +108,9 @@ class App extends Component {
     } else {
       this.setVariable();
       this.createRSAPair();
+
       fetch(dest + '/connect/ask', {
+
         method: 'GET',
       })
         .then(response => response.json())
@@ -111,6 +121,7 @@ class App extends Component {
           var B = BigNumber(data['g'])
             .exponentiatedBy(parseInt(localStorage.getItem('private')))
             .modulo(data['p']).toString();
+
           console.log(B);
           var s = BigNumber(data['key'])
             .exponentiatedBy(parseInt(localStorage.getItem('private')))
@@ -119,12 +130,15 @@ class App extends Component {
           var e = bigInt.fromArray(data['e'].value, 100);
           var n = bigInt.fromArray(data['n'].value, 100);
           fetch(dest + '/connect/ask', {
+
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+
               'B': this.rsaencrypt(bigInt(B), n, e).toArray(100),
+
               'id': data['id']
             }),
           })
@@ -148,6 +162,7 @@ class App extends Component {
 
   handleChange = (e) => {
     const regex = new RegExp('/>([a-zA-Z0-9]+)<', 'g');
+
     this.setState({text: e.target.value});
   };
 
@@ -163,6 +178,7 @@ class App extends Component {
   handleDecrypt = (e) => {
     this.setState({decryptmsg: ''});
     this.decrypt(this.state.encrypteddc, this.state.encryptediv);
+
   };
 
   handleSend = (e) => {
@@ -185,6 +201,7 @@ class App extends Component {
             Cybersecurity Final Project: Diffie Hellman Message Logger
           </Menu.Item>
         </Menu>
+
         <div>
           <h1 style={{margin: 20}}>Encrypt and Send</h1>
           <TextArea onChange={this.handleChange} style={{marginTop: '2vh', width: '90vw', marginLeft: '2vw'}} rows={4} />
