@@ -7,18 +7,22 @@ var forge = require("node-forge");
 const privateKey = require("../diffie-helman/privateKey");
 const BigNumber = require("bignumber.js");
 
+
 RSAgenerate = keysize => {
   function randomPrime(bits) {
     const min = bigInt(6074001000).shiftLeft(bits - 33); // min ≈ √2 × 2^(bits - 1)
     const max = bigInt.one.shiftLeft(bits).minus(1); // max = 2^(bits) - 1
     for (;;) {
       const p = bigInt.randBetween(min, max); // WARNING: not a cryptographically secure RNG!
+
       if (p.isProbablePrime(256)) {
         return p;
       }
     }
   }
+
   const e = bigInt(37);
+
   let p;
   let q;
   let lambda;
@@ -26,6 +30,7 @@ RSAgenerate = keysize => {
     p = randomPrime(keysize / 2);
     q = randomPrime(keysize / 2);
     lambda = bigInt.lcm(p.minus(1), q.minus(1));
+
   } while (
     bigInt.gcd(e, lambda).notEquals(1) ||
     p
@@ -64,6 +69,7 @@ router.get("/ask", async (req, res) => {
   console.log(asym_key["d"]);
   console.log(asym_key["n"]);
   console.log(asym_key["e"]);
+
   var bits = 9;
 
   let g, p;
@@ -90,6 +96,7 @@ router.get("/ask", async (req, res) => {
   // SEND "_id" AS USER_ID COOKIE
   res.cookie("USER_ID", connection._id.toString());
   cookie = connection._id.toString();
+
   const resp = {
     p,
     g,
@@ -98,6 +105,7 @@ router.get("/ask", async (req, res) => {
     e: asym_key["e"].toArray(100),
     n: asym_key["n"].toArray(100)
   };
+
   res.send(resp);
 });
 
@@ -105,6 +113,7 @@ router.post("/ask", async (req, res) => {
   if (req.body.id) {
     const activeConnection = await Connection.findById(req.body.id);
     if (activeConnection) {
+
       console.log(
         "req body b",
         req.body.B,
@@ -116,6 +125,7 @@ router.post("/ask", async (req, res) => {
 
       const B = RSAdecrypt(req.body.B.value, asym_key["d"], asym_key["n"]);
       console.log("decrypted b", B);
+
       const secret_key = BigNumber(B)
         .exponentiatedBy(privateKey)
         .modulo(activeConnection.p);
