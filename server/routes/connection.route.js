@@ -13,12 +13,15 @@ RSAgenerate = keysize => {
     const max = bigInt.one.shiftLeft(bits).minus(1); // max = 2^(bits) - 1
     for (;;) {
       const p = bigInt.randBetween(min, max); // WARNING: not a cryptographically secure RNG!
+
       if (p.isProbablePrime(256)) {
         return p;
       }
     }
   }
+
   const e = bigInt(37);
+
   let p;
   let q;
   let lambda;
@@ -87,6 +90,7 @@ router.get("/ask", async (req, res) => {
   // SEND "_id" AS USER_ID COOKIE
   res.cookie("USER_ID", connection._id.toString());
   cookie = connection._id.toString();
+
   const resp = {
     p,
     g,
@@ -95,6 +99,7 @@ router.get("/ask", async (req, res) => {
     e: asym_key["e"].toArray(100),
     n: asym_key["n"].toArray(100)
   };
+
   res.send(resp);
 });
 

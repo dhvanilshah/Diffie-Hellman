@@ -9,12 +9,20 @@ var forge = require('node-forge');
 var bigInt = require("big-integer");
 const { TextArea } = Input;
 
+const dest = 'http://192.168.2.32:8080';
+
+
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       key: '',
-      text: ''
+
+      text: '',
+      encryptedtx: '',
+      ivtx: '',
+      decryptmsg: ''
+
     };
   }
   encrypt = (message, key) => {
@@ -28,10 +36,16 @@ class App extends Component {
     // Convert encrypted msg and IV to Hex
     var encryptedHex = cipher.output.toHex();
     var ivHex = forge.util.bytesToHex(ivBytes);
+
+    this.setState({
+      encryptedtx: encryptedHex,
+      ivtx: ivHex
+    });
     console.log(encryptedHex);
     console.log(ivHex);
+    console.log(message);
+    fetch(dest + '/msg/rx', {
 
-    fetch('http://192.168.0.182:8080/msg/rx', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43,6 +57,32 @@ class App extends Component {
       }),
     }).then(response => console.log(response))
   };
+
+  decrypt = (encryptedHex, ivHex) => {
+    var key = localStorage.getItem('secret');
+    var buffer = Buffer.alloc(16);
+    buffer.fill(key);
+    var keyBytes = forge.util.createBuffer(buffer.toString('Binary'));
+    console.log('Encrypted Hex: ', encryptedHex);
+    console.log('IV Hex:', ivHex);
+    console.log('Secret Key: ', keyBytes);
+
+    var encryptedBytes = forge.util.hexToBytes(encryptedHex);
+    var ivBytes = forge.util.hexToBytes(ivHex);
+    // Decipher
+    var decipher = forge.cipher.createDecipher("AES-CBC", keyBytes);
+    decipher.start({ iv: ivBytes });
+    decipher.update(forge.util.createBuffer(encryptedBytes));
+    var result = decipher.finish();
+    if (result == false) {
+      console.log(result);
+      this.setState({decryptmsg: 'Could not decrypt. Possible invalid hex combination'});
+    } else {
+      var msgBytes = decipher.output.toString();
+      this.setState({decryptmsg: msgBytes});
+    }
+  };
+
   handleSubmit = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
@@ -52,9 +92,12 @@ class App extends Component {
     });
   };
 
-  rsaencrypt = (m, n, e) => (
-      bigInt(m).modPow(e, n)
-  );
+
+  rsaencrypt = (m, n, e) => {
+    return m.modPow(e, n);
+  }
+
+
 
   componentWillMount() {
 
@@ -65,7 +108,9 @@ class App extends Component {
     } else {
       this.setVariable();
       this.createRSAPair();
-      fetch('http://localhost:8080/connect/ask', {
+
+      fetch(dest + '/connect/ask', {
+
         method: 'GET',
       })
         .then(response => response.json())
@@ -73,22 +118,27 @@ class App extends Component {
           console.log(data);
           localStorage.setItem('user_id', data['id']);
           document.cookie = "USER_ID=" + data['id'];
-          //console.log(parseInt(localStorage.getItem('key')));
           var B = BigNumber(data['g'])
             .exponentiatedBy(parseInt(localStorage.getItem('private')))
             .modulo(data['p']).toString();
+
+          console.log(B);
           var s = BigNumber(data['key'])
             .exponentiatedBy(parseInt(localStorage.getItem('private')))
             .modulo(data['p']).toString();
-          var e = bigInt.fromArray(data['e'], 100);
-          var n = bigInt.fromArray(data['n'], 100);
-          fetch('http://192.168.0.182:8080/connect/ask', {
+
+          var e = bigInt.fromArray(data['e'].value, 100);
+          var n = bigInt.fromArray(data['n'].value, 100);
+          fetch(dest + '/connect/ask', {
+
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              'B': this.rsaencrypt(bigInt(B), e, n).toArray(100),
+
+              'B': this.rsaencrypt(bigInt(B), n, e).toArray(100),
+
               'id': data['id']
             }),
           })
@@ -112,7 +162,23 @@ class App extends Component {
 
   handleChange = (e) => {
     const regex = new RegExp('/>([a-zA-Z0-9]+)<', 'g');
-    this.setState({text: e.target.textContent});
+
+    this.setState({text: e.target.value});
+  };
+
+  handleChangeDC = (e) => {
+    const regex = new RegExp('/>([a-zA-Z0-9]+)<', 'g');
+    this.setState({encrypteddc: e.target.value});
+  };
+  handleChangeIV = (e) => {
+    const regex = new RegExp('/>([a-zA-Z0-9]+)<', 'g');
+    this.setState({encryptediv: e.target.value});
+  };
+
+  handleDecrypt = (e) => {
+    this.setState({decryptmsg: ''});
+    this.decrypt(this.state.encrypteddc, this.state.encryptediv);
+
   };
 
   handleSend = (e) => {
@@ -135,10 +201,40 @@ class App extends Component {
             Cybersecurity Final Project: Diffie Hellman Message Logger
           </Menu.Item>
         </Menu>
-            <TextArea onChange={this.handleChange} style={{marginTop: '2vh', width: '90vw', marginLeft: '2vw'}} rows={4} />
+
+        <div>
+          <h1 style={{margin: 20}}>Encrypt and Send</h1>
+          <TextArea onChange={this.handleChange} style={{marginTop: '2vh', width: '90vw', marginLeft: '2vw'}} rows={4} />
+          <div>
             <Button type="primary" onClick={this.handleSend} htmlType="submit" className="login-form-button" style={{marginTop: '2vh', marginLeft: '2vw'}}>
               Submit
             </Button>
+          </div>
+          {this.state.encryptedtx !== '' ?
+              <div style={{width: '40vw'}}>
+                <h3 style={{margin: 20, width: '70%', wordWrap: 'break-word'}}>{'Encryped text: ' + this.state.encryptedtx} </h3>
+                <h3 style={{margin: 20, width: '70%', wordWrap: 'break-word'}}>{'Initialization vector: ' + this.state.ivtx} </h3>
+              </div>
+              :
+              <> </>
+          }
+        </div>
+        <div>
+          <h1 style={{margin: 20}}>Decrypt</h1>
+          <TextArea onChange={this.handleChangeDC} style={{marginTop: '2vh', width: '90vw', marginLeft: '2vw'}} rows={4} />
+          <TextArea onChange={this.handleChangeIV} style={{marginTop: '2vh', width: '90vw', marginLeft: '2vw'}} rows={4} />
+        </div>
+
+        <Button type="primary" onClick={this.handleDecrypt} htmlType="submit" className="login-form-button" style={{marginTop: '2vh', marginLeft: '2vw'}}>
+          Decrypt
+        </Button>
+        {this.state.decryptmsg !== '' ?
+            <div style={{width: '40vw'}}>
+              <h3 style={{margin: 20, width: '70%', wordWrap: 'break-word'}}>{'Decrypted Message: ' + this.state.decryptmsg} </h3>
+            </div>
+            :
+            <> </>
+        }
       </React.Fragment>
     );
   }
