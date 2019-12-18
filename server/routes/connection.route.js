@@ -2,11 +2,49 @@ const { Connection } = require("../database/connection.model");
 const express = require("express");
 const router = express.Router();
 const DiffieHelman = require("../diffie-helman/dh");
+var bigInt = require("big-integer");
 var forge = require("node-forge");
 const privateKey = require("../diffie-helman/privateKey");
 const BigNumber = require("bignumber.js");
 
+var asym_key = RSAgenerate(8);
+
+RSAgenerate = (keysize) => {
+  function randomPrime(bits) {
+    const min = bigInt(6074001000).shiftLeft(bits - 33);  // min ≈ √2 × 2^(bits - 1)
+    const max = bigInt.one.shiftLeft(bits).minus(1);  // max = 2^(bits) - 1
+    for (; ;) {
+      const p = bigInt.randBetween(min, max);  // WARNING: not a cryptographically secure RNG!
+      if (p.isProbablePrime(256)) {
+        return p;
+      }
+    }
+  }
+  const e = bigInt(65537);
+  let p;
+  let q;
+  let lambda;
+  do {
+    p = randomPrime(keysize / 2);
+    q = randomPrime(keysize / 2);
+    lambda = bigInt.lcm(p.minus(1), q.minus(1));
+  } while (bigInt.gcd(e, lambda).notEquals(1) || p.minus(q).abs().shiftRight(
+      keysize / 2 - 100).isZero());
+
+  return {
+    n: p.multiply(q),  // public key (part I)
+    e: e,  // public key (part II)
+    d: e.modInv(lambda),  // private key d = e^(-1) mod λ(n)
+  };
+};
+
+RSAdecrypt = (c, d, n) => (
+  bigInt.fromArray(c, 100).modPow(d, n)
+);
+
 router.get("/ask", async (req, res) => {
+  console.log(asym_key['n']);
+  console.log(asym_key['e']);
   var bits = 9;
   let g, p;
 
@@ -33,7 +71,7 @@ router.get("/ask", async (req, res) => {
   res.cookie("USER_ID", connection._id.toString());
   console.log(res.cookie);
   cookie = connection._id.toString();
-  const resp = { p, g, key: key.toString(), id: cookie };
+  const resp = { p, g, key: key.toString(), id: cookie, e: asym_key['e'].toArray(100), n: asym_key['n'].toArray(100)};
   res.send(resp);
 });
 
@@ -41,7 +79,7 @@ router.post("/ask", async (req, res) => {
   if (req.body.id) {
     const activeConnection = await Connection.findById(req.body.id);
     if (activeConnection) {
-      const B = req.body.B;
+      const B = rsadecrypt(req.body.B, asym_key['d'], asym_key['n']);
       const secret_key = BigNumber(B)
         .exponentiatedBy(privateKey)
         .modulo(activeConnection.p);
