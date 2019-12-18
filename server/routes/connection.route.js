@@ -61,9 +61,6 @@ RSAdecrypt = (c, d, n) => {
 };
 
 router.get("/ask", async (req, res) => {
-  console.log(asym_key["d"]);
-  console.log(asym_key["n"]);
-  console.log(asym_key["e"]);
   var bits = 9;
 
   let g, p;
@@ -105,21 +102,12 @@ router.post("/ask", async (req, res) => {
   if (req.body.id) {
     const activeConnection = await Connection.findById(req.body.id);
     if (activeConnection) {
-      console.log(
-        "req body b",
-        req.body.B,
-        "req body d",
-        asym_key["d"],
-        "req body n",
-        asym_key["n"]
-      );
-
       const B = RSAdecrypt(req.body.B.value, asym_key["d"], asym_key["n"]);
-      console.log("decrypted b", B);
+
       const secret_key = BigNumber(B)
         .exponentiatedBy(privateKey)
         .modulo(activeConnection.p);
-      console.log(B, secret_key.toString());
+
       activeConnection.secret_key = parseInt(secret_key.toString());
       await activeConnection.save();
       res.sendStatus(200);

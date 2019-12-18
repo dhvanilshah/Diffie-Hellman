@@ -47,7 +47,6 @@ router.post("/rx", async (req, res) => {
 
   var buf = Buffer.alloc(16);
   buf.fill(secret_key);
-  console.log("buf.bl", buf.byteLength);
   var top_secret = forge.util.createBuffer(buf.toString("Binary"));
 
   // Convert Hex to Bytes
@@ -69,6 +68,7 @@ router.post("/rx", async (req, res) => {
   // Send Original msg in JSON
   else {
     var msgBytes = decipher.output.toString();
+    console.log(ivHex);
     console.log("The Decrypted Message: ", msgBytes);
     // res.json({ msg: msgBytes });
     res.sendStatus(200);
